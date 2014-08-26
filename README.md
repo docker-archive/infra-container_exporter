@@ -9,4 +9,4 @@ and exposes them for prometheus consumption.
 ## Run it as container
 
     docker run -p 8080:8080 -v /sys/fs/cgroup:/cgroup \
-               -v /var/run/docker.sock:/var/run/docker.sock:ro fish/container_exporter
+               -v /var/run/docker.sock:/var/run/docker.sock fish/container_exporter
