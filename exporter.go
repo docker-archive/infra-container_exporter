@@ -249,17 +249,17 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		if err != nil {
 			return err
 		}
-		for i, stat := range stats.BlkioStats.IoServiceBytesRecursive {
-			e.blkioIoServiceBytesRecursive.WithLabelValues(name, id, fmt.Sprintf("cpu%02d", i), devMap.name(stat.Major, stat.Minor)).Set(float64(stat.Value))
+		for _, stat := range stats.BlkioStats.IoServiceBytesRecursive {
+			e.blkioIoServiceBytesRecursive.WithLabelValues(name, id, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
 		}
-		for i, stat := range stats.BlkioStats.IoServicedRecursive {
-			e.blkioIoServicedRecursive.WithLabelValues(name, id, fmt.Sprintf("cpu%02d", i), devMap.name(stat.Major, stat.Minor)).Set(float64(stat.Value))
+		for _, stat := range stats.BlkioStats.IoServicedRecursive {
+			e.blkioIoServicedRecursive.WithLabelValues(name, id, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
 		}
-		for i, stat := range stats.BlkioStats.IoQueuedRecursive {
-			e.blkioIoQueuedRecursive.WithLabelValues(name, id, fmt.Sprintf("cpu%02d", i), devMap.name(stat.Major, stat.Minor)).Set(float64(stat.Value))
+		for _, stat := range stats.BlkioStats.IoQueuedRecursive {
+			e.blkioIoQueuedRecursive.WithLabelValues(name, id, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
 		}
-		for i, stat := range stats.BlkioStats.SectorsRecursive {
-			e.blkioSectorsRecursive.WithLabelValues(name, id, fmt.Sprintf("cpu%02d", i), devMap.name(stat.Major, stat.Minor)).Set(float64(stat.Value))
+		for _, stat := range stats.BlkioStats.SectorsRecursive {
+			e.blkioSectorsRecursive.WithLabelValues(name, id, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
 		}
 	}
 	return nil

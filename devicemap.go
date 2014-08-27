@@ -40,7 +40,7 @@ func newDeviceMap(filename string) (dm deviceMap, err error) {
 		if _, ok := dm[major]; !ok {
 			dm[major] = map[int]string{}
 		}
-		dm[major][minor] = parts[3]
+		dm[major][minor] = parts[2]
 	}
 	return dm, nil
 }
