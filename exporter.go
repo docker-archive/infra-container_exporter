@@ -171,7 +171,7 @@ func NewExporter(manager Manager) *Exporter {
 			Name:      "blkio_sectors_recursive_total",
 			Help:      "Number of sectors transferred to/from disk by the cgroup.",
 		},
-			[]string{"name", "id", "device", "op"},
+			[]string{"name", "id", "device"},
 		),
 	}
 }
@@ -259,7 +259,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 			e.blkioIoQueuedRecursive.WithLabelValues(name, id, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
 		}
 		for _, stat := range stats.BlkioStats.SectorsRecursive {
-			e.blkioSectorsRecursive.WithLabelValues(name, id, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
+			e.blkioSectorsRecursive.WithLabelValues(name, id, devMap.name(stat.Major, stat.Minor)).Set(float64(stat.Value))
 		}
 	}
 	return nil
