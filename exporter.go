@@ -270,6 +270,21 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.mutex.Lock() // To protect metrics from concurrent collects.
 	defer e.mutex.Unlock()
+	e.lastSeen.Reset()
+	e.cpuUsagePercent.Reset()
+	e.cpuUsageSeconds.Reset()
+	e.cpuUsageSecondsPerCPU.Reset()
+	e.cpuThrottledPeriods.Reset()
+	e.cpuThrottledTime.Reset()
+	e.memoryUsageBytes.Reset()
+	e.memoryMaxUsageBytes.Reset()
+	e.memoryFailures.Reset()
+	e.memoryStats.Reset()
+	e.memoryPaging.Reset()
+	e.blkioIoServiceBytesRecursive.Reset()
+	e.blkioIoServicedRecursive.Reset()
+	e.blkioIoQueuedRecursive.Reset()
+	e.blkioSectorsRecursive.Reset()
 	if err := e.collect(ch); err != nil {
 		log.Printf("Error reading container stats: %s", err)
 		e.errors.WithLabelValues("collect").Inc()
