@@ -38,7 +38,6 @@ type Exporter struct {
 
 	errors                       *prometheus.CounterVec
 	lastSeen                     *prometheus.CounterVec
-	cpuUsagePercent              *prometheus.GaugeVec
 	cpuUsageSeconds              *prometheus.CounterVec
 	cpuUsageSecondsPerCPU        *prometheus.CounterVec
 	cpuThrottledPeriods          *prometheus.CounterVec
@@ -69,13 +68,6 @@ func NewExporter(manager Manager) *Exporter {
 			Namespace: namespace,
 			Name:      "last_seen",
 			Help:      "Last time a container was seen by the exporter",
-		},
-			[]string{"name", "id"},
-		),
-		cpuUsagePercent: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: namespace,
-			Name:      "cpu_usage_percent",
-			Help:      "Percentage of available CPUs currently being used.",
 		},
 			[]string{"name", "id"},
 		),
@@ -181,7 +173,6 @@ func NewExporter(manager Manager) *Exporter {
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.errors.Describe(ch)
 	e.lastSeen.Describe(ch)
-	e.cpuUsagePercent.Describe(ch)
 	e.cpuUsageSeconds.Describe(ch)
 	e.cpuUsageSecondsPerCPU.Describe(ch)
 	e.cpuThrottledPeriods.Describe(ch)
@@ -217,8 +208,6 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 
 		// CPU stats
 		// - Usage
-		e.cpuUsagePercent.WithLabelValues(name, id).Set(float64(stats.CpuStats.CpuUsage.PercentUsage))
-
 		for i, value := range stats.CpuStats.CpuUsage.PercpuUsage {
 			e.cpuUsageSecondsPerCPU.WithLabelValues(name, id, fmt.Sprintf("cpu%02d", i)).Set(float64(value) / float64(time.Second))
 		}
@@ -271,7 +260,6 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.mutex.Lock() // To protect metrics from concurrent collects.
 	defer e.mutex.Unlock()
 	e.lastSeen.Reset()
-	e.cpuUsagePercent.Reset()
 	e.cpuUsageSeconds.Reset()
 	e.cpuUsageSecondsPerCPU.Reset()
 	e.cpuThrottledPeriods.Reset()
@@ -291,7 +279,6 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	}
 	e.errors.Collect(ch)
 	e.lastSeen.Collect(ch)
-	e.cpuUsagePercent.Collect(ch)
 	e.cpuUsageSeconds.Collect(ch)
 	e.cpuUsageSecondsPerCPU.Collect(ch)
 	e.cpuThrottledPeriods.Collect(ch)
