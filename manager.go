@@ -13,5 +13,6 @@ type Manager interface {
 type container struct {
 	Name    string
 	ID      string
+	Image   string
 	Cgroups *cgroups.Cgroup
 }

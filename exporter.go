@@ -69,21 +69,21 @@ func NewExporter(manager Manager) *Exporter {
 			Name:      "last_seen",
 			Help:      "Last time a container was seen by the exporter",
 		},
-			[]string{"name", "id"},
+			[]string{"name", "id", "image"},
 		),
 		cpuUsageSeconds: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "cpu_usage_seconds_total",
 			Help:      "Total seconds of cpu time consumed.",
 		},
-			[]string{"name", "id", "type"},
+			[]string{"name", "id", "image", "type"},
 		),
 		cpuUsageSecondsPerCPU: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "cpu_usage_per_cpu_seconds_total",
 			Help:      "Total seconds of cpu time consumed per cpu.",
 		},
-			[]string{"name", "id", "cpu"},
+			[]string{"name", "id", "image", "cpu"},
 		),
 
 		cpuThrottledPeriods: prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -91,35 +91,35 @@ func NewExporter(manager Manager) *Exporter {
 			Name:      "cpu_throttled_periods_total",
 			Help:      "Number of periods with throttling.",
 		},
-			[]string{"name", "id", "state"},
+			[]string{"name", "id", "image", "state"},
 		),
 		cpuThrottledTime: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "cpu_throttled_time_seconds_total",
 			Help:      "Aggregate time the container was throttled for in seconds.",
 		},
-			[]string{"name", "id"},
+			[]string{"name", "id", "image"},
 		),
 		memoryUsageBytes: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "memory_usage_bytes",
 			Help:      "Current memory usage in bytes.",
 		},
-			[]string{"name", "id"},
+			[]string{"name", "id", "image"},
 		),
 		memoryMaxUsageBytes: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "memory_max_usage_bytes",
 			Help:      "Maximum memory usage ever recorded in bytes.",
 		},
-			[]string{"name", "id"},
+			[]string{"name", "id", "image"},
 		),
 		memoryFailures: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "memory_failures_total",
 			Help:      "Number of times memory usage hits limits.",
 		},
-			[]string{"name", "id"},
+			[]string{"name", "id", "image"},
 		),
 		// Since libcontainer exports this only as a raw map, we just expose those
 		// metrics like this. This may change (and break) in the future.
@@ -128,42 +128,42 @@ func NewExporter(manager Manager) *Exporter {
 			Name:      "memory_stats",
 			Help:      "Stats from cgroup/memory/memory.stat.",
 		},
-			[]string{"name", "id", "type"},
+			[]string{"name", "id", "image", "type"},
 		),
 		memoryPaging: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "memory_paging_total",
 			Help:      "Paging events from cgroup/memory/memory.stat.",
 		},
-			[]string{"name", "id", "type"},
+			[]string{"name", "id", "image", "type"},
 		),
 		blkioIoServiceBytesRecursive: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "blkio_io_service_bytes_recursive_total",
 			Help:      "Number of bytes transferred to/from the disk by the cgroup.",
 		},
-			[]string{"name", "id", "device", "op"},
+			[]string{"name", "id", "image", "device", "op"},
 		),
 		blkioIoServicedRecursive: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "blkio_io_serviced_recursive_total",
 			Help:      "Number of IOs completed to/from the disk by the cgroup.",
 		},
-			[]string{"name", "id", "device", "op"},
+			[]string{"name", "id", "image", "device", "op"},
 		),
 		blkioIoQueuedRecursive: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "blkio_io_queued_recursive",
 			Help:      "Number of requests currently queued up for the cgroup.",
 		},
-			[]string{"name", "id", "device", "op"},
+			[]string{"name", "id", "image", "device", "op"},
 		),
 		blkioSectorsRecursive: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "blkio_sectors_recursive_total",
 			Help:      "Number of sectors transferred to/from disk by the cgroup.",
 		},
-			[]string{"name", "id", "device"},
+			[]string{"name", "id", "image", "device"},
 		),
 	}
 }
@@ -202,36 +202,37 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		}
 		name := container.Name
 		id := container.ID
+		image := container.Image
 
 		// Last seen
-		e.lastSeen.WithLabelValues(name, id).Set(float64(time.Now().Unix()))
+		e.lastSeen.WithLabelValues(name, id, image).Set(float64(time.Now().Unix()))
 
 		// CPU stats
 		// - Usage
 		for i, value := range stats.CpuStats.CpuUsage.PercpuUsage {
-			e.cpuUsageSecondsPerCPU.WithLabelValues(name, id, fmt.Sprintf("cpu%02d", i)).Set(float64(value) / float64(time.Second))
+			e.cpuUsageSecondsPerCPU.WithLabelValues(name, id, image, fmt.Sprintf("cpu%02d", i)).Set(float64(value) / float64(time.Second))
 		}
 
-		e.cpuUsageSeconds.WithLabelValues(name, id, "kernel").Set(float64(stats.CpuStats.CpuUsage.UsageInKernelmode) / float64(time.Second))
-		e.cpuUsageSeconds.WithLabelValues(name, id, "user").Set(float64(stats.CpuStats.CpuUsage.UsageInUsermode) / float64(time.Second))
+		e.cpuUsageSeconds.WithLabelValues(name, id, image, "kernel").Set(float64(stats.CpuStats.CpuUsage.UsageInKernelmode) / float64(time.Second))
+		e.cpuUsageSeconds.WithLabelValues(name, id, image, "user").Set(float64(stats.CpuStats.CpuUsage.UsageInUsermode) / float64(time.Second))
 
 		// - Throttling
-		e.cpuThrottledPeriods.WithLabelValues(name, id, "total").Set(float64(stats.CpuStats.ThrottlingData.Periods))
-		e.cpuThrottledPeriods.WithLabelValues(name, id, "throttled").Set(float64(stats.CpuStats.ThrottlingData.ThrottledPeriods))
-		e.cpuThrottledTime.WithLabelValues(name, id).Set(float64(stats.CpuStats.ThrottlingData.ThrottledTime) / float64(time.Second))
+		e.cpuThrottledPeriods.WithLabelValues(name, id, image, "total").Set(float64(stats.CpuStats.ThrottlingData.Periods))
+		e.cpuThrottledPeriods.WithLabelValues(name, id, image, "throttled").Set(float64(stats.CpuStats.ThrottlingData.ThrottledPeriods))
+		e.cpuThrottledTime.WithLabelValues(name, id, image).Set(float64(stats.CpuStats.ThrottlingData.ThrottledTime) / float64(time.Second))
 
 		// Memory stats
-		e.memoryUsageBytes.WithLabelValues(name, id).Set(float64(stats.MemoryStats.Usage))
-		e.memoryMaxUsageBytes.WithLabelValues(name, id).Set(float64(stats.MemoryStats.MaxUsage))
+		e.memoryUsageBytes.WithLabelValues(name, id, image).Set(float64(stats.MemoryStats.Usage))
+		e.memoryMaxUsageBytes.WithLabelValues(name, id, image).Set(float64(stats.MemoryStats.MaxUsage))
 
 		for t, value := range stats.MemoryStats.Stats {
 			if isMemoryPagingCounter(t) {
-				e.memoryPaging.WithLabelValues(name, id, t).Set(float64(value))
+				e.memoryPaging.WithLabelValues(name, id, image, t).Set(float64(value))
 			} else {
-				e.memoryStats.WithLabelValues(name, id, t).Set(float64(value))
+				e.memoryStats.WithLabelValues(name, id, image, t).Set(float64(value))
 			}
 		}
-		e.memoryFailures.WithLabelValues(name, id).Set(float64(stats.MemoryStats.Failcnt))
+		e.memoryFailures.WithLabelValues(name, id, image).Set(float64(stats.MemoryStats.Failcnt))
 
 		// BlkioStats
 		devMap, err := newDeviceMap(procDiskStats)
@@ -239,16 +240,16 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 			return err
 		}
 		for _, stat := range stats.BlkioStats.IoServiceBytesRecursive {
-			e.blkioIoServiceBytesRecursive.WithLabelValues(name, id, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
+			e.blkioIoServiceBytesRecursive.WithLabelValues(name, id, image, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
 		}
 		for _, stat := range stats.BlkioStats.IoServicedRecursive {
-			e.blkioIoServicedRecursive.WithLabelValues(name, id, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
+			e.blkioIoServicedRecursive.WithLabelValues(name, id, image, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
 		}
 		for _, stat := range stats.BlkioStats.IoQueuedRecursive {
-			e.blkioIoQueuedRecursive.WithLabelValues(name, id, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
+			e.blkioIoQueuedRecursive.WithLabelValues(name, id, image, devMap.name(stat.Major, stat.Minor), stat.Op).Set(float64(stat.Value))
 		}
 		for _, stat := range stats.BlkioStats.SectorsRecursive {
-			e.blkioSectorsRecursive.WithLabelValues(name, id, devMap.name(stat.Major, stat.Minor)).Set(float64(stat.Value))
+			e.blkioSectorsRecursive.WithLabelValues(name, id, image, devMap.name(stat.Major, stat.Minor)).Set(float64(stat.Value))
 		}
 	}
 	return nil

@@ -30,8 +30,9 @@ func (m *dockerManager) Containers() ([]*container, error) {
 	cl := []*container{}
 	for _, c := range containers {
 		cl = append(cl, &container{
-			ID:   c.ID,
-			Name: c.Names[0][1:], // FIXME: This isn't a very good solution but the best I could think of.
+			ID:    c.ID,
+			Name:  c.Names[0][1:], // FIXME: This isn't a very good solution but the best I could think of.
+			Image: c.Image,
 			Cgroups: &cgroups.Cgroup{
 				Name:   c.ID,
 				Parent: m.parent,
