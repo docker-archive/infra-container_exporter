@@ -6,4 +6,4 @@ WORKDIR    $APP
 ADD        . /gopath/src/github.com/docker-infra/container-exporter
 RUN        go get -d && go build
 ENTRYPOINT [ "./container-exporter" ]
-EXPOSE     8080
+EXPOSE     9104

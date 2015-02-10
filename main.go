@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	listeningAddress = flag.String("telemetry.address", ":8080", "Address on which to expose metrics.")
+	listeningAddress = flag.String("telemetry.address", ":9104", "Address on which to expose metrics.")
 	metricsEndpoint  = flag.String("telemetry.endpoint", "/metrics", "Path under which to expose metrics.")
 	addr             = flag.String("addr", "unix:///var/run/docker.sock", "Docker address to connect to")
 	parent           = flag.String("parent", "/docker", "Parent cgroup")
