@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
+	"path"
 	"sync"
 	"time"
 
 	"github.com/docker/libcontainer/cgroups/fs"
+	"github.com/google/cadvisor/container/libcontainer"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -195,7 +197,13 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		return err
 	}
 	for _, container := range containers {
-		stats, err := fs.GetStats(container.Cgroups)
+		cgroupSubsystems, err := libcontainer.GetCgroupSubsystems()
+		cgroupPaths := make(map[string]string, len(cgroupSubsystems.MountPoints))
+		for key, val := range cgroupSubsystems.MountPoints {
+			cgroupPaths[key] = path.Join(val, container.ID)
+		}
+
+		stats, err := fs.GetStats(cgroupPaths)
 		if err != nil {
 			e.errors.WithLabelValues("stats").Inc()
 			return err
