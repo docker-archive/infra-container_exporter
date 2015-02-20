@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"path"
 	"sync"
 	"time"
@@ -189,6 +190,24 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.blkioIoQueuedRecursive.Describe(ch)
 	e.blkioSectorsRecursive.Describe(ch)
 }
+func (e *Exporter) findCgroupPath(mnt, id string) (string, error) {
+	cp := path.Join(mnt, e.manager.Parent())
+	if _, err := os.Stat(cp); err == nil {
+		mnt = cp
+	}
+	for _, p := range []string{
+		path.Join(mnt, id),
+		path.Join(mnt, "docker-"+id+".scope"),
+		path.Join(mnt, "docker-"+id),
+		path.Join(mnt, id+".scope"),
+	} {
+
+		if _, err := os.Stat(p); err == nil {
+			return p, nil
+		}
+	}
+	return "", fmt.Errorf("cgroup path for %s(/%s) in %s not found", id, e.manager.Parent(), mnt)
+}
 
 func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 	containers, err := e.manager.Containers()
@@ -200,7 +219,12 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		cgroupSubsystems, err := libcontainer.GetCgroupSubsystems()
 		cgroupPaths := make(map[string]string, len(cgroupSubsystems.MountPoints))
 		for key, val := range cgroupSubsystems.MountPoints {
-			cgroupPaths[key] = path.Join(val, container.ID)
+			p, err := e.findCgroupPath(val, container.ID)
+			if err != nil {
+				e.errors.WithLabelValues("find-cgroup").Inc()
+				return err
+			}
+			cgroupPaths[key] = p
 		}
 
 		stats, err := fs.GetStats(cgroupPaths)

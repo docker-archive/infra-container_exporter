@@ -1,9 +1,6 @@
 package main
 
-import (
-	"github.com/docker/libcontainer/cgroups"
-	"github.com/fsouza/go-dockerclient"
-)
+import "github.com/fsouza/go-dockerclient"
 
 type dockerManager struct {
 	addr   string
@@ -33,11 +30,11 @@ func (m *dockerManager) Containers() ([]*container, error) {
 			ID:    c.ID,
 			Name:  c.Names[0][1:], // FIXME: This isn't a very good solution but the best I could think of.
 			Image: c.Image,
-			Cgroups: &cgroups.Cgroup{
-				Name:   c.ID,
-				Parent: m.parent,
-			},
 		})
 	}
 	return cl, nil
+}
+
+func (m *dockerManager) Parent() string {
+	return m.parent
 }
