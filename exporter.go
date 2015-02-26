@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/libcontainer/cgroups"
 	"github.com/docker/libcontainer/cgroups/fs"
-	"github.com/google/cadvisor/container/libcontainer"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -190,6 +190,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.blkioIoQueuedRecursive.Describe(ch)
 	e.blkioSectorsRecursive.Describe(ch)
 }
+
 func (e *Exporter) findCgroupPath(mnt, id string) (string, error) {
 	cp := path.Join(mnt, e.manager.Parent())
 	if _, err := os.Stat(cp); err == nil {
@@ -206,7 +207,7 @@ func (e *Exporter) findCgroupPath(mnt, id string) (string, error) {
 			return p, nil
 		}
 	}
-	return "", fmt.Errorf("cgroup path for %s(/%s) in %s not found", id, e.manager.Parent(), mnt)
+	return "", fmt.Errorf("cgroup path for %s with parent %s in %s not found", id, e.manager.Parent(), mnt)
 }
 
 func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
@@ -215,19 +216,26 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		e.errors.WithLabelValues("list").Inc()
 		return err
 	}
+	mounts, err := cgroups.GetCgroupMounts()
+	if err != nil {
+		return err
+	}
 	for _, container := range containers {
-		cgroupSubsystems, err := libcontainer.GetCgroupSubsystems()
-		cgroupPaths := make(map[string]string, len(cgroupSubsystems.MountPoints))
-		for key, val := range cgroupSubsystems.MountPoints {
-			p, err := e.findCgroupPath(val, container.ID)
+		cgroupPaths := make(map[string]string, len(mounts))
+		for _, mount := range mounts {
+			p, err := e.findCgroupPath(mount.Mountpoint, container.ID)
 			if err != nil {
-				e.errors.WithLabelValues("find-cgroup").Inc()
-				return err
+				continue // Ignore
 			}
-			cgroupPaths[key] = p
+			for _, subsystem := range mount.Subsystems {
+				cgroupPaths[subsystem] = p
+			}
 		}
-
-		stats, err := fs.GetStats(cgroupPaths)
+		manager := &fs.Manager{
+			Paths:   cgroupPaths,
+			Cgroups: nil,
+		}
+		stats, err := manager.GetStats()
 		if err != nil {
 			e.errors.WithLabelValues("stats").Inc()
 			return err

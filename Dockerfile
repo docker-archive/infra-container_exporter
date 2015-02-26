@@ -1,9 +1,5 @@
-FROM       golang:latest
+FROM       golang:onbuild
 MAINTAINER Johannes 'fish' Ziemke <github@freigeist.org> (@discordianfish)
-ENV APP    /go/src/github.com/docker-infra/container_exporter
-ENV GOPATH /go:/$APP/_vendor
-WORKDIR    $APP
-ADD        . /go/src/github.com/docker-infra/container_exporter
-RUN        go get -u -d && go build
-ENTRYPOINT [ "./container_exporter" ]
+ENTRYPOINT [ "go-wrapper", "run" ]
+CMD        [ "" ]
 EXPOSE     9104
