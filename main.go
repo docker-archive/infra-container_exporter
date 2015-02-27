@@ -46,7 +46,7 @@ func main() {
 	handler := prometheus.Handler()
 	if *authUser != "" || *authPass != "" {
 		if *authUser == "" || *authPass == "" {
-			glog.Fatal("You need to specify -auth.user and -auth.pass to enable basi  c auth")
+			glog.Fatal("You need to specify -auth.user and -auth.pass to enable basic auth")
 		}
 		handler = &basicAuthHandler{
 			handler:  prometheus.Handler().ServeHTTP,
