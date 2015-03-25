@@ -8,5 +8,5 @@ and exposes them for prometheus consumption.
 
 ## Run it as container
 
-    docker run -p 9103:9103 -v /sys/fs/cgroup:/cgroup \
-               -v /var/run/docker.sock:/var/run/docker.sock prom/container_exporter
+    docker run -p 9104:9104 -v /sys/fs/cgroup:/cgroup \
+               -v /var/run/docker.sock:/var/run/docker.sock prom/container-exporter
