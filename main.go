@@ -4,8 +4,10 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/golang/glog"
+	"github.com/fsouza/go-dockerclient"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -16,6 +18,7 @@ var (
 	parent           = flag.String("parent", "/docker", "Parent cgroup")
 	authUser         = flag.String("auth.user", "", "Username for basic auth.")
 	authPass         = flag.String("auth.pass", "", "Password for basic auth. Enables basic auth if set.")
+	labelString      = flag.String("labels", "", "A comma seperated list of docker labels to export for containers.")
 )
 
 type basicAuthHandler struct {
@@ -37,9 +40,19 @@ func (h *basicAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	flag.Parse()
-
 	manager := newDockerManager(*addr, *parent)
-	exporter := NewExporter(manager)
+	var labels []string
+	if *labelString != "" {
+		labels = strings.Split(*labelString, ",")
+	} else {
+		labels = make([]string, 0)
+	}
+
+	dockerClient, err := docker.NewClient("unix:///var/run/docker.sock")
+	if err != nil {
+		log.Fatalf("Unable to start docker client %v", err.Error())
+	}
+	exporter := NewExporter(manager, *dockerClient, labels)
 	prometheus.MustRegister(exporter)
 
 	log.Printf("Starting Server: %s", *listeningAddress)
