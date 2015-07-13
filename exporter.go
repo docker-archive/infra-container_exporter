@@ -283,8 +283,8 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		e.cpuThrottledTime.WithLabelValues(append([]string{name, id, image}, labelValues...)...).Set(float64(stats.CpuStats.ThrottlingData.ThrottledTime) / float64(time.Second))
 
 		// Memory stats
-		e.memoryUsageBytes.WithLabelValues(append([]string{name, id, image}, labelValues...)...).Set(float64(stats.MemoryStats.Usage))
-		e.memoryMaxUsageBytes.WithLabelValues(append([]string{name, id, image}, labelValues...)...).Set(float64(stats.MemoryStats.MaxUsage))
+		e.memoryUsageBytes.WithLabelValues(append([]string{name, id, image}, labelValues...)...).Set(float64(stats.MemoryStats.Usage.Usage))
+		e.memoryMaxUsageBytes.WithLabelValues(append([]string{name, id, image}, labelValues...)...).Set(float64(stats.MemoryStats.Usage.MaxUsage))
 
 		for t, value := range stats.MemoryStats.Stats {
 			if isMemoryPagingCounter(t) {
@@ -293,7 +293,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 				e.memoryStats.WithLabelValues(append([]string{name, id, image, t}, labelValues...)...).Set(float64(value))
 			}
 		}
-		e.memoryFailures.WithLabelValues(append([]string{name, id, image}, labelValues...)...).Set(float64(stats.MemoryStats.Failcnt))
+		e.memoryFailures.WithLabelValues(append([]string{name, id, image}, labelValues...)...).Set(float64(stats.MemoryStats.Usage.Failcnt))
 
 		// BlkioStats
 		devMap, err := newDeviceMap(procDiskStats)
