@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 	"sync"
 	"time"
 
@@ -61,6 +62,10 @@ type Exporter struct {
 
 // NewExporter returns an initialized Exporter.Vec
 func NewExporter(manager Manager, dockerClient docker.Client, labels []string) *Exporter {
+	var sanitizedLabels = make([]string, len(labels))
+	for index, labelName := range labels {
+		sanitizedLabels[index] = sanitize(labelName)
+	}
 	return &Exporter{
 		manager: manager,
 		client:  dockerClient,
@@ -77,21 +82,21 @@ func NewExporter(manager Manager, dockerClient docker.Client, labels []string) *
 			Name:      "last_seen",
 			Help:      "Last time a container was seen by the exporter",
 		},
-			append([]string{"name", "id", "image"}, labels...),
+			append([]string{"name", "id", "image"}, sanitizedLabels...),
 		),
 		cpuUsageSeconds: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "cpu_usage_seconds_total",
 			Help:      "Total seconds of cpu time consumed.",
 		},
-			append([]string{"name", "id", "image", "type"}, labels...),
+			append([]string{"name", "id", "image", "type"}, sanitizedLabels...),
 		),
 		cpuUsageSecondsPerCPU: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "cpu_usage_per_cpu_seconds_total",
 			Help:      "Total seconds of cpu time consumed per cpu.",
 		},
-			append([]string{"name", "id", "image", "cpu"}, labels...),
+			append([]string{"name", "id", "image", "cpu"}, sanitizedLabels...),
 		),
 
 		cpuThrottledPeriods: prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -99,35 +104,35 @@ func NewExporter(manager Manager, dockerClient docker.Client, labels []string) *
 			Name:      "cpu_throttled_periods_total",
 			Help:      "Number of periods with throttling.",
 		},
-			append([]string{"name", "id", "image", "state"}, labels...),
+			append([]string{"name", "id", "image", "state"}, sanitizedLabels...),
 		),
 		cpuThrottledTime: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "cpu_throttled_time_seconds_total",
 			Help:      "Aggregate time the container was throttled for in seconds.",
 		},
-			append([]string{"name", "id", "image"}, labels...),
+			append([]string{"name", "id", "image"}, sanitizedLabels...),
 		),
 		memoryUsageBytes: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "memory_usage_bytes",
 			Help:      "Current memory usage in bytes.",
 		},
-			append([]string{"name", "id", "image"}, labels...),
+			append([]string{"name", "id", "image"}, sanitizedLabels...),
 		),
 		memoryMaxUsageBytes: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "memory_max_usage_bytes",
 			Help:      "Maximum memory usage ever recorded in bytes.",
 		},
-			append([]string{"name", "id", "image"}, labels...),
+			append([]string{"name", "id", "image"}, sanitizedLabels...),
 		),
 		memoryFailures: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "memory_failures_total",
 			Help:      "Number of times memory usage hits limits.",
 		},
-			append([]string{"name", "id", "image"}, labels...),
+			append([]string{"name", "id", "image"}, sanitizedLabels...),
 		),
 		// Since libcontainer exports this only as a raw map, we just expose those
 		// metrics like this. This may change (and break) in the future.
@@ -136,44 +141,48 @@ func NewExporter(manager Manager, dockerClient docker.Client, labels []string) *
 			Name:      "memory_stats",
 			Help:      "Stats from cgroup/memory/memory.stat.",
 		},
-			append([]string{"name", "id", "image", "type"}, labels...),
+			append([]string{"name", "id", "image", "type"}, sanitizedLabels...),
 		),
 		memoryPaging: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "memory_paging_total",
 			Help:      "Paging events from cgroup/memory/memory.stat.",
 		},
-			append([]string{"name", "id", "image", "type"}, labels...),
+			append([]string{"name", "id", "image", "type"}, sanitizedLabels...),
 		),
 		blkioIoServiceBytesRecursive: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "blkio_io_service_bytes_recursive_total",
 			Help:      "Number of bytes transferred to/from the disk by the cgroup.",
 		},
-			append([]string{"name", "id", "image", "device", "op"}, labels...),
+			append([]string{"name", "id", "image", "device", "op"}, sanitizedLabels...),
 		),
 		blkioIoServicedRecursive: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "blkio_io_serviced_recursive_total",
 			Help:      "Number of IOs completed to/from the disk by the cgroup.",
 		},
-			append([]string{"name", "id", "image", "device", "op"}, labels...),
+			append([]string{"name", "id", "image", "device", "op"}, sanitizedLabels...),
 		),
 		blkioIoQueuedRecursive: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "blkio_io_queued_recursive",
 			Help:      "Number of requests currently queued up for the cgroup.",
 		},
-			append([]string{"name", "id", "image", "device", "op"}, labels...),
+			append([]string{"name", "id", "image", "device", "op"}, sanitizedLabels...),
 		),
 		blkioSectorsRecursive: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "blkio_sectors_recursive_total",
 			Help:      "Number of sectors transferred to/from disk by the cgroup.",
 		},
-			append([]string{"name", "id", "image", "device"}, labels...),
+			append([]string{"name", "id", "image", "device"}, sanitizedLabels...),
 		),
 	}
+}
+
+func sanitize(label string) string {
+	return strings.Replace(label, ".", "_", -1)
 }
 
 // Describe describes all the metrics ever exported. It
