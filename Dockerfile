@@ -1,5 +1,5 @@
-FROM       alpine:edge
-MAINTAINER Johannes 'fish' Ziemke <fish@docker.com> (@discordianfish)
+FROM       alpine:latest
+MAINTAINER Brian Glogower <bglogower@docker.com>
 EXPOSE     9104
 
 ENV  GOPATH /go
