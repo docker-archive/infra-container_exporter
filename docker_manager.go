@@ -1,25 +1,30 @@
 package main
 
-import "github.com/fsouza/go-dockerclient"
+import (
+	"log"
+
+	"github.com/fsouza/go-dockerclient"
+)
 
 type dockerManager struct {
 	addr   string
 	parent string
+	client *docker.Client
 }
 
 func newDockerManager(addr, parent string) *dockerManager {
-	return &dockerManager{addr: addr, parent: parent}
+	client, err := docker.NewClient(addr)
+	if err != nil {
+		log.Fatalf("Unable to start docker client %v", err.Error())
+	}
+	return &dockerManager{addr: addr, parent: parent, client: client}
 }
 
 // Return a list of all running containers on the system
 func (m *dockerManager) Containers() ([]*container, error) {
-	client, err := docker.NewClient(m.addr)
-	if err != nil {
-		return nil, err
-	}
 
 	// Get all *running* containers
-	containers, err := client.ListContainers(docker.ListContainersOptions{All: false})
+	containers, err := m.client.ListContainers(docker.ListContainersOptions{All: false})
 	if err != nil {
 		return nil, err
 	}

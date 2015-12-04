@@ -40,7 +40,7 @@ func isMemoryPagingCounter(t string) bool {
 type Exporter struct {
 	mutex   sync.RWMutex
 	manager Manager
-	client  docker.Client
+	client  *docker.Client
 	labels  []string
 
 	errors                       *prometheus.CounterVec
@@ -61,7 +61,7 @@ type Exporter struct {
 }
 
 // NewExporter returns an initialized Exporter.Vec
-func NewExporter(manager Manager, dockerClient docker.Client, labels []string) *Exporter {
+func NewExporter(manager Manager, dockerClient *docker.Client, labels []string) *Exporter {
 	var sanitizedLabels = make([]string, len(labels))
 	for index, labelName := range labels {
 		sanitizedLabels[index] = sanitize(labelName)

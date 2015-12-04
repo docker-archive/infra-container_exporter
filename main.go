@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/fsouza/go-dockerclient"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -48,11 +47,7 @@ func main() {
 		labels = make([]string, 0)
 	}
 
-	dockerClient, err := docker.NewClient("unix:///var/run/docker.sock")
-	if err != nil {
-		log.Fatalf("Unable to start docker client %v", err.Error())
-	}
-	exporter := NewExporter(manager, *dockerClient, labels)
+	exporter := NewExporter(manager, manager.client, labels)
 	prometheus.MustRegister(exporter)
 
 	log.Printf("Starting Server: %s", *listeningAddress)
