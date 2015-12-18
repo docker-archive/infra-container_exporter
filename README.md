@@ -1,3 +1,6 @@
+# DEPRECATED
+Please use [cAdvisor](https://github.com/google/cadvisor)
+
 # Container Exporter
 [Prometheus](https://github.com/prometheus/prometheus) exporter exposing container metrics.
 
