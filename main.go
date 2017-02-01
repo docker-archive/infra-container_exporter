@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -59,7 +58,7 @@ func main() {
 	handler := prometheus.Handler()
 	if *authUser != "" || *authPass != "" {
 		if *authUser == "" || *authPass == "" {
-			glog.Fatal("You need to specify -auth.user and -auth.pass to enable basic auth")
+			log.Fatal("You need to specify -auth.user and -auth.pass to enable basic auth")
 		}
 		handler = &basicAuthHandler{
 			handler:  prometheus.Handler().ServeHTTP,
